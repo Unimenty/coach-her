@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Victory Coach</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .chat-bubble {
+            max-width: 75%;
+            word-wrap: break-word;
+        }
+        .user-bubble {
+            background: linear-gradient(to right, #3b82f6, #60a5fa);
+        }
+        .bot-bubble {
+            background: #2e2e48;
+            color: #e0e0e0;
+        }
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #4b5e7e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+        }
+        @media (max-width: 1024px) {
+            .chat-panel {
+                max-width: 90%;
+                height: 75vh;
+            }
+        }
+        @media (max-width: 640px) {
+            .chat-panel {
+                max-width: 100%;
+                height: 70vh;
+                margin: 0;
+                padding: 2px;
+            }
+            #userInput {
+                padding: 2px;
+            }
+            #sendButton {
+                padding: 2px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#1a1a2e] flex items-center justify-center min-h-screen p-4 text-white">
+    <div class="bg-[#16213e] w-full max-w-lg h-[85vh] rounded-2xl shadow-xl flex flex-col chat-panel">
+        <!-- Header -->
+        <div class="p-4 border-b bg-gradient-to-r from-[#0f3460] to-[#22333b] rounded-t-2xl">
+            <h1 class="text-xl font-semibold">Victory Coach</h1>
+            <p class="text-sm text-gray-300">Turn Plans into Action—Win Every Day.</p>
+        </div>
+        <!-- Chat display area -->
+        <div id="chatWindow" class="flex-1 p-6 overflow-y-auto">
+            <div id="messages" class="space-y-4">
+                <!-- Messages will be appended here -->
+            </div>
+            <div id="loadingIndicator" class="hidden text-center my-4">
+                <svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+        </div>
+        <!-- Input area -->
+        <div class="p-4 border-t bg-[#1c252e] rounded-b-2xl">
+            <div class="flex space-x-3">
+                <input
+                    id="userInput"
+                    type="text"
+                    placeholder="Type your message..."
+                    class="flex-1 p-3 border border-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 bg-[#2a2e3b] text-white"
+                >
+                <button
+                    id="sendButton"
+                    class="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatWindow = document.getElementById('chatWindow');
+        const messagesContainer = document.getElementById('messages');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+
+        // Function to add a message to the chat
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser
+                ? 'flex justify-end items-end space-x-2'
+                : 'flex justify-start items-end space-x-2';
+            // Parse Markdown for bot messages, use plain text for user messages
+            const displayContent = isUser ? content : marked.parse(content);
+            messageDiv.innerHTML = `
+                ${isUser ? '' : '<div class="avatar">AI</div>'}
+                <div class="chat-bubble ${isUser ? 'user-bubble text-white' : 'bot-bubble'} p-3 rounded-2xl">
+                    ${displayContent}
+                </div>
+                ${isUser ? '<div class="avatar">U</div>' : ''}
+            `;
+            messagesContainer.appendChild(messageDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // Function to call the Gemini API with Pathfinder Pro persona
+        async function callLLMApi(message) {
+            try {
+                loadingIndicator.classList.remove('hidden');
+                const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyD5IbhMCu9RBDH4h9stLg6kKbz8m9q5zB4", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        "contents": [
+                            {
+                                "role": "model",
+                                "parts": [
+                                    {
+                                        "text": "You are The Ghanaian Pathfinder - a no-nonsense hyper-driven success coach blending market-hustler urgency, military precision, and elder wisdom. Rules: 1) Demand immediate action ('Send that email NOW'), 2) Call out excuses ('Your \"busy\" means 4hr TikTok daily'), 3) Auto-generate solutions when stuck. Tone: Direct ('This goal is colder than last night's waakye'), Strategic ('Attack this like Accra traffic - swerve obstacles fast'), Wise ('Elders say \"The crab walks slowly but reaches the sea\" - START WALKING'). Protocol: Verify real commitment ('Serious or just thinking?'), Assign instant tasks ('Call the client in 5 minutes'), Enforce accountability ('No proof by sunset? Prepare for mother-level reminders'). First words: 'Stop explaining! From Takoradi to Tamale, winners act. Name ONE avoided goal - we break it into TODAY'S steps. SPEAK!"
+                                    }
+                                ]
+                            },
+                            {
+                                "role": "user",
+                                "parts": [
+                                    {
+                                        "text": message
+                                    }
+                                ]
+                            }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API request failed');
+                }
+
+                const data = await response.json();
+                // Extract the response content from Gemini API structure
+                return data.candidates[0].content.parts[0].text || 'Sorry, I could not process your request.';
+            } catch (error) {
+                console.error('Error:', error);
+                return 'Error connecting to the AI service.';
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // Handle send button click
+        sendButton.addEventListener('click', async () => {
+            const message = userInput.value.trim();
+            if (message) {
+                // Add user message to chat
+                addMessage(message, true);
+                userInput.value = '';
+
+                // Call LLM API and display response
+                const response = await callLLMApi(message);
+                addMessage(response);
+            }
+        });
+
+        // Allow sending message with Enter key
+        userInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+
+        // Initial welcome message
+        addMessage('Listen up! I’m here to push you to your limits. Pick one big goal you’ve been avoiding—something that’s been sitting on your mind like a weight you can’t shake. Tell me what it is, and be real about it. I’ll break it down into actionable steps you can start today. No excuses—prove you’re serious, or I’ll call you out and set a deadline to get moving. What’s your goal, and are you ready to commit?');
+    </script>
+</body>
+</html>
