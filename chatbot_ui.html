@@ -55,9 +55,12 @@
 <body class="bg-[#0f172a] flex items-center justify-center min-h-screen p-4 text-white">
     <div class="bg-[#1e1b4b] w-full max-w-lg h-[85vh] rounded-2xl shadow-xl flex flex-col chat-panel border border-[#6d28d9]">
         <!-- Header -->
-        <div class="p-4 border-b border-[#6d28d9] bg-gradient-to-r from-[#4c1d95] to-[#2e1065] rounded-t-2xl">
-            <h1 class="text-xl font-bold text-violet-100">Victory Coach</h1>
-            <p class="text-sm text-violet-200">Turn Plans into Action—Win Every Day.</p>
+        <div class="p-4 border-b border-[#6d28d9] bg-gradient-to-r from-[#4c1d95] to-[#2e1065] rounded-t-2xl flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold text-violet-100">Victory Coach</h1>
+                <p class="text-sm text-violet-200">Turn Plans into Action—Win Every Day.</p>
+            </div>
+            <button onclick="clearHistory()" class="ml-2 p-2 rounded border text-xs text-violet-100 border-violet-700 hover:bg-violet-700 transition-all">Clear History</button>
         </div>
         <!-- Chat display area -->
         <div id="chatWindow" class="flex-1 p-6 overflow-y-auto bg-gradient-to-b from-[#1e1b4b] to-[#0f172a]">
@@ -82,10 +85,11 @@
                 >
                 <button
                     id="sendButton"
-                    class="bg-gradient-to-r from-[#7e22ce] to-[#6d28d9] text-white p-3 rounded-full hover:from-[#6d28d9] hover:to-[#5b21b6] transition-all shadow-lg hover:shadow-violet-500/20"
+                    class="bg-gradient-to-r from-[#7e22ce] to-[#6d28d9] text-white p-3 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:from-[#6d28d9] hover:to-[#5b21b6] hover:shadow-xl hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+                    aria-label="Send message"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-6 9 6-9 6-9-6zm0 0v6a9 9 0 009 9 9 9 0 009-9v-6" />
                     </svg>
                 </button>
             </div>
@@ -100,7 +104,7 @@
         const loadingIndicator = document.getElementById('loadingIndicator');
 
         // Function to add a message to the chat
-        function addMessage(content, isUser = false) {
+        function addMessage(content, isUser = false, skipSave = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = isUser
                 ? 'flex justify-end items-end space-x-2'
@@ -116,6 +120,33 @@
             `;
             messagesContainer.appendChild(messageDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            // Save to localStorage unless loading from history
+            if (!skipSave) {
+                saveMessageToHistory({ content, isUser });
+            }
+        }
+
+        // LocalStorage helpers
+        function saveMessageToHistory(message) {
+            let history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            history.push(message);
+            localStorage.setItem('chatHistory', JSON.stringify(history));
+        }
+
+        function loadHistory() {
+            let history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+            if (history.length > 0) {
+                messagesContainer.innerHTML = '';
+                history.forEach(msg => addMessage(msg.content, msg.isUser, true));
+            }
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('chatHistory');
+            messagesContainer.innerHTML = '';
+            // Show welcome message again
+            addMessage('Listen up! I’m here to push you to your limits. Pick one big goal you’ve been avoiding—something that’s been sitting on your mind like a weight you can’t shake. Tell me what it is, and be real about it. I’ll break it down into actionable steps you can start today. No excuses—prove you’re serious, or I’ll call you out and set a deadline to get moving. What’s your goal, and are you ready to commit?');
         }
 
         // Function to call the Gemini API with Pathfinder Pro persona
@@ -185,8 +216,13 @@
             }
         });
 
-        // Initial welcome message
-        addMessage('Listen up! I’m here to push you to your limits. Pick one big goal you’ve been avoiding—something that’s been sitting on your mind like a weight you can’t shake. Tell me what it is, and be real about it. I’ll break it down into actionable steps you can start today. No excuses—prove you’re serious, or I’ll call you out and set a deadline to get moving. What’s your goal, and are you ready to commit?');
+        // Load chat history if available
+        loadHistory();
+
+        // Only show welcome message if no history
+        if (!localStorage.getItem('chatHistory') || JSON.parse(localStorage.getItem('chatHistory')).length === 0) {
+            addMessage('Listen up! I’m here to push you to your limits. Pick one big goal you’ve been avoiding—something that’s been sitting on your mind like a weight you can’t shake. Tell me what it is, and be real about it. I’ll break it down into actionable steps you can start today. No excuses—prove you’re serious, or I’ll call you out and set a deadline to get moving. What’s your goal, and are you ready to commit?');
+        }
     </script>
 </body>
 </html>
